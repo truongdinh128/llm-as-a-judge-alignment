@@ -85,42 +85,82 @@ def call_baseline_judge(row: pd.Series) -> dict[str, float] | None:
     )
 
     try:
-        response = _CLIENT.models.generate_content(
-            model=config.JUDGE_MODEL,
-            contents=[BASELINE_SYSTEM_PROMPT + "\n\n" + prompt],
-            config=genai_types.GenerateContentConfig(
-                temperature=0.0,
-                max_output_tokens=256,
-            ),
-        )
-        raw = response.text.strip()
+        try:
+            response = _CLIENT.models.generate_content(
+                model=config.JUDGE_MODEL,
+                contents=[BASELINE_SYSTEM_PROMPT + "\n\n" + prompt],
+                config=genai_types.GenerateContentConfig(
+                    temperature=0.0,
+                    max_output_tokens=1024,
+                    response_mime_type="application/json",
+                    thinking_config=genai_types.ThinkingConfig(thinking_budget=0),
+                ),
+            )
+        except Exception as e_think:
+            # Fallback nếu model không hỗ trợ thinking_budget=0
+            log.debug("Thử gọi không có thinking_budget do: %s", e_think)
+            response = _CLIENT.models.generate_content(
+                model=config.JUDGE_MODEL,
+                contents=[BASELINE_SYSTEM_PROMPT + "\n\n" + prompt],
+                config=genai_types.GenerateContentConfig(
+                    temperature=0.0,
+                    max_output_tokens=1024,
+                    response_mime_type="application/json",
+                ),
+            )
+        raw = response.text.strip() if response.text else ""
 
-        # Trích xuất JSON từ response
-        json_match = re.search(r"\{.*?\}", raw, re.DOTALL)
-        if not json_match:
-            log.warning("Không tìm thấy JSON trong response: %s", raw[:200])
+
+        # Trích xuất và parse JSON từ response
+        scores = None
+        # 1. Thử parse trực tiếp nếu là JSON thuần
+        try:
+            scores = json.loads(raw)
+        except json.JSONDecodeError:
+            pass
+
+        # 2. Nếu bọc trong markdown code fence ```json ... ```
+        if scores is None and "```" in raw:
+            fences = re.findall(r"```(?:json)?\s*([\s\S]*?)\s*```", raw)
+            for f in reversed(fences):
+                f = f.strip()
+                try:
+                    candidate = json.loads(f)
+                    if all(col in candidate for col in config.SCORE_COLS):
+                        scores = candidate
+                        break
+                except Exception:
+                    pass
+
+        # 3. Regex tìm block {...}
+        if scores is None:
+            json_match = re.search(r"\{[\s\S]*?\}", raw)
+            if json_match:
+                try:
+                    scores = json.loads(json_match.group())
+                except json.JSONDecodeError:
+                    pass
+
+        if scores is None:
+            log.warning("Không tìm thấy JSON hợp lệ trong response: %s", raw[:200])
             return None
-
-        scores = json.loads(json_match.group())
 
         # Validate và normalize
         result = {}
         for col in config.SCORE_COLS:
             val = scores.get(col)
             if val is None:
-                log.warning("Thiếu key '%s' trong response", col)
+                log.warning("Thiếu key '%s' trong response: %s", col, scores)
                 return None
-            val = float(val)
-            if not 1 <= val <= 5:
-                log.warning("Score out of range [1,5]: %s=%s", col, val)
-                val = max(1.0, min(5.0, val))
+            try:
+                val = float(val)
+            except (ValueError, TypeError):
+                log.warning("Giá trị không hợp lệ cho key '%s': %s", col, val)
+                return None
+            val = max(1.0, min(5.0, val))
             result[col] = val
         return result
 
-    except json.JSONDecodeError as e:
-        log.error("JSON parse error: %s | raw: %s", e, raw[:200])
-
-        return None
     except Exception as e:
         log.error("API call error: %s", e)
         return None

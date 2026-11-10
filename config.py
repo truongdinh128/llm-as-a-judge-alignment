@@ -7,13 +7,13 @@ Cấu hình chung cho toàn bộ pipeline LLM-as-a-Judge.
 import os
 
 # ── API ────────────────────────────────────────────────────────────────────────
-GEMINI_API_KEY = "AIzaSyC_va_mfJfQNob6iQouwXN6vGpAIxZ8Vwg"
+GEMINI_API_KEY = ""
 
-# Model Gemini dùng để judge (5 RPM / 20 RPD)
-JUDGE_MODEL = "gemini-2.5-flash"
+# Model Gemini dùng để judge
+JUDGE_MODEL = "gemini-3.5-flash-lite"
 
 # Giới hạn rate: 5 requests/phút → sleep 12 giây mỗi request để an toàn
-RATE_LIMIT_SLEEP = 13      # giây giữa mỗi lần gọi API
+RATE_LIMIT_SLEEP = 6      # giây giữa mỗi lần gọi API
 
 # ── Dataset HuggingFace ────────────────────────────────────────────────────────
 HF_LLM_JUDGE_DATASET   = "Lakshan2003/gemini-2.5-flash-customerservice-LLM-as-a-judge-data"

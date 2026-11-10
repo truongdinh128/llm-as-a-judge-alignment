@@ -175,40 +175,53 @@ def call_improved_judge(row: pd.Series, attempt: int = 1) -> dict[str, float] | 
             contents=[IMPROVED_SYSTEM_PROMPT + "\n\n" + prompt],
             config=genai_types.GenerateContentConfig(
                 temperature=0.1,   # Thấp để ổn định, không quá 0
-                max_output_tokens=512,
+                max_output_tokens=2048,
             ),
         )
-        raw = response.text.strip()
+        raw = response.text.strip() if response.text else ""
         log.debug("  [attempt %d] Raw response: %s", attempt, raw[:300])
 
-
-        # Trích xuất JSON cuối cùng trong response (sau CoT)
-        # Tìm JSON block cuối cùng
-        json_matches = list(re.finditer(r"\{[^{}]*\}", raw, re.DOTALL))
-        if not json_matches:
-            log.warning("  Không tìm thấy JSON trong response (attempt %d)", attempt)
-            return None
-
-        # Lấy JSON phù hợp nhất (chứa các key cần thiết)
         scores = None
-        for m in reversed(json_matches):
-            try:
-                candidate = json.loads(m.group())
-                if all(col in candidate for col in config.SCORE_COLS):
-                    scores = candidate
-                    break
-            except json.JSONDecodeError:
-                continue
 
+        # 1. Tìm trong markdown code blocks ```json ... ``` hoặc ``` ... ```
+        if "```" in raw:
+            fences = re.findall(r"```(?:json)?\s*([\s\S]*?)\s*```", raw)
+            for f in reversed(fences):
+                f = f.strip()
+                try:
+                    candidate = json.loads(f)
+                    if all(col in candidate for col in config.SCORE_COLS):
+                        scores = candidate
+                        break
+                except Exception:
+                    pass
+
+        # 2. Tìm khối JSON cuối cùng trong response
         if scores is None:
-            # Thử parse toàn bộ text nếu không tìm được
+            json_matches = list(re.finditer(r"\{[^{}]*\}", raw, re.DOTALL))
+            for m in reversed(json_matches):
+                try:
+                    candidate = json.loads(m.group())
+                    if all(col in candidate for col in config.SCORE_COLS):
+                        scores = candidate
+                        break
+                except json.JSONDecodeError:
+                    continue
+
+        # 3. Fallback: parse toàn bộ nếu text là JSON
+        if scores is None:
             try:
                 full_match = re.search(r"\{[\s\S]*\}", raw)
                 if full_match:
-                    scores = json.loads(full_match.group())
+                    candidate = json.loads(full_match.group())
+                    if all(col in candidate for col in config.SCORE_COLS):
+                        scores = candidate
             except Exception:
-                log.warning("  Fallback JSON parse cũng thất bại (attempt %d)", attempt)
-                return None
+                pass
+
+        if scores is None:
+            log.warning("  Không tìm thấy JSON hợp lệ trong response (attempt %d): %s", attempt, raw[:200])
+            return None
 
         # Validate
         result = {}
@@ -217,7 +230,11 @@ def call_improved_judge(row: pd.Series, attempt: int = 1) -> dict[str, float] | 
             if val is None:
                 log.warning("  Thiếu key '%s' (attempt %d)", col, attempt)
                 return None
-            val = float(val)
+            try:
+                val = float(val)
+            except (ValueError, TypeError):
+                log.warning("  Giá trị không hợp lệ cho key '%s': %s", col, val)
+                return None
             val = max(1.0, min(5.0, val))
             result[col] = val
 
