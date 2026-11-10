@@ -1,4 +1,4 @@
-# Báo cáo Đề tài: Đánh giá và Cải tiến LLM-as-a-Judge
+# Cải tiến phương pháp LLM-as-a-Judge trong đánh giá hiệu năng AI Agent CSKH
 
 ## 1. Tổng quan đề tài (Executive Summary / Overview)
 - Bối cảnh: Ứng dụng LLM-as-a-Judge trong đánh giá hội thoại chăm sóc khách hàng (Customer Service).
