@@ -1,0 +1,10 @@
+﻿conversation_id,conversation_stage,human_avg_Human_Likeness,human_avg_Continuity_and_Context_Understanding,human_avg_Tone_and_Clarity,human_avg_Task_Appropriateness,llm_Human_Likeness,llm_Continuity_and_Context_Understanding,llm_Tone_and_Clarity,llm_Task_Appropriateness,improved_Human_Likeness,improved_Continuity_and_Context_Understanding,improved_Tone_and_Clarity,improved_Task_Appropriateness
+33d66c36b56543b88ee229ede3ce8261,MIDDLE,4.0,5.0,4.0,4.666666666666667,4.0,4.0,4.0,2.0,,,,
+7c0665faed68407e8f7822c9d6cb2846,MIDDLE,4.333333333333333,4.666666666666667,4.333333333333333,3.6666666666666665,4.0,4.0,4.0,3.0,,,,
+d2f24afe27ea4d5ca8c4904bedbac1f4,MIDDLE,4.666666666666667,5.0,5.0,4.0,5.0,5.0,5.0,4.0,,,,
+50ff181a3def48b6a729f52134ac579d,BEGINNING,4.666666666666667,5.0,5.0,4.666666666666667,5.0,5.0,5.0,5.0,,,,
+a1a6f289fbeb402781139fecfefae6b9,MIDDLE,4.0,4.666666666666667,4.0,3.333333333333333,4.0,2.0,4.0,2.0,,,,
+df24fbc8331a40098369ed533dfee670,MIDDLE,5.0,5.0,5.0,4.666666666666667,4.0,4.0,4.0,4.0,,,,
+20b9451d02864017a3bfdbf43fca6681,MIDDLE,4.0,4.666666666666667,4.0,4.333333333333333,4.0,4.0,4.0,3.0,,,,
+abc28755c31948fe8ae052261628d8dd,BEGINNING,4.666666666666667,5.0,5.0,4.333333333333333,5.0,5.0,5.0,4.0,,,,
+e2c37fd3e285408690944fcd377a0cfd,MIDDLE,4.0,4.333333333333333,4.0,3.333333333333333,4.0,4.0,4.0,2.0,,,,
